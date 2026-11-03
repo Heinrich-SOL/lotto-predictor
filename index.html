@@ -3,20 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <!-- 아이폰 홈 화면 '진짜 앱' PWA 설정 (상단/하단 사파리 바 제거 및 풀스크린) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="로또AI">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#ffffff">
+
+  <!-- 아이폰 홈 화면 전용 고화질 아이콘 (골드 럭키 클로버 3D 볼) -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><radialGradient id='g' cx='30%' cy='30%' r='70%'><stop offset='0%' stop-color='%23fef08a'/><stop offset='100%' stop-color='%23d97706'/></radialGradient></defs><circle cx='50' cy='50' r='48' fill='url(%23g)' stroke='%23b45309' stroke-width='3'/><text x='50' y='64' font-size='42' text-anchor='middle' font-family='sans-serif'>🍀</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%23f59e0b'/><text x='50' y='64' font-size='40' text-anchor='middle'>🎱</text></svg>">
+
   <title>로또 6/45 AI 생성기 & 실시간 자동 동기화</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * {
       -webkit-tap-highlight-color: transparent;
       box-sizing: border-box;
-      word-break: keep-all; /* 한글 단어 단위 줄바꿈 (글자 단위 끊김 방지) */
+      word-break: keep-all;
     }
     html, body {
       overflow-x: hidden;
       touch-action: manipulation;
       background-color: #f8fafc;
       color: #0f172a;
-      font-size: 15px; /* 전체 폰트 기본 크기 상향 */
+      font-size: 15px;
     }
 
     /* 동행복권 공식 볼 색상 표준 (화이트 배경 최적화 입체 볼) */
@@ -74,13 +86,19 @@
 <body class="bg-slate-50 text-slate-900 antialiased min-h-screen pb-28 md:pb-12">
   <div class="max-w-xl md:max-w-4xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
 
-    <!-- 상단 헤더 카드 (아이폰 12 미니 맞춤 2줄 여유 배치) -->
+    <!-- 상단 헤더 카드 (D-Day 타이머 및 자동 동기화 탑재) -->
     <header class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-6 shadow-sm space-y-3">
-      <!-- 1줄: 누적 데이터 뱃지 -->
-      <div class="flex items-center justify-between">
-        <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
+      <!-- 1줄: 누적 데이터 뱃지 & 실시간 D-Day 카운트다운 타이머 -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 w-fit">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span id="headerBadge">제1회 ~ 제1247회 공식 누적 데이터 탑재</span>
+        </div>
+
+        <!-- 다음 추첨 D-Day 실시간 뱃지 -->
+        <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200 w-fit">
+          <span>⏳</span>
+          <span id="ddayBadgeText">추첨일 계산 중...</span>
         </div>
       </div>
 
@@ -94,7 +112,7 @@
         </p>
       </div>
 
-      <!-- 2줄: 버튼 영역 (밀림 방지 2버튼 전용 그리드) -->
+      <!-- 2줄: 밀림 방지 2버튼 전용 그리드 -->
       <div class="grid grid-cols-2 gap-2 pt-1">
         <button id="btnAutoSync" onclick="autoSyncLatestDraws(true)" class="py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 flex items-center justify-center gap-1.5 active:scale-95 transition-all font-bold text-xs shadow-2xs whitespace-nowrap">
           <span id="syncSpinner" class="hidden animate-spin">🔄</span>
@@ -114,7 +132,6 @@
 
     <!-- [핵심 1] 최고 확률 번호 순위 기준 설정 (TOP N 슬라이더) -->
     <section class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3.5">
-      <!-- 1줄: 제목과 적용 범위 뱃지 -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
           <span class="text-xl">🎯</span>
@@ -129,7 +146,6 @@
         역대 출현 빈도가 높은 상위 순위 번호들로만 번호 조합을 생성합니다.
       </p>
 
-      <!-- 슬라이더 컨트롤 -->
       <div class="space-y-2 pt-1">
         <input type="range" id="rankSlider" min="10" max="45" value="20" step="1" oninput="handleRankChange(this.value)" class="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500">
         <div class="flex justify-between text-[11px] sm:text-xs text-slate-400 font-mono font-medium">
@@ -140,7 +156,6 @@
         </div>
       </div>
 
-      <!-- 빠른 선택 버튼 (아이폰 12 미니 2x2 정렬로 글자 밀림 완전 해결) -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
         <button onclick="setRankPreset(12)" class="py-2 px-2.5 rounded-xl text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 active:scale-95 font-semibold text-center whitespace-nowrap">TOP 12 (초집중)</button>
         <button onclick="setRankPreset(20)" class="py-2 px-2.5 rounded-xl text-xs bg-amber-500 text-white border border-amber-600 font-bold active:scale-95 shadow-xs text-center whitespace-nowrap">TOP 20 (추천★)</button>
@@ -148,7 +163,6 @@
         <button onclick="setRankPreset(45)" class="py-2 px-2.5 rounded-xl text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 active:scale-95 font-semibold text-center whitespace-nowrap">전체 45개 번호</button>
       </div>
 
-      <!-- 현재 활성화된 후보 번호 목록 -->
       <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
         <div class="flex items-center justify-between text-xs">
           <span class="font-bold text-slate-800">선택된 후보 번호 풀 (<span id="activePoolCount" class="text-amber-700">20</span>개):</span>
@@ -158,7 +172,7 @@
       </div>
     </section>
 
-    <!-- [핵심 2] 추천 번호 5게임 슬립 영역 (번호 복사 제거 및 글씨 확대) -->
+    <!-- [핵심 2] 추천 번호 5게임 슬립 영역 (햅틱 손맛 탑재) -->
     <main class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3.5">
       <div class="pb-2 border-b border-slate-100">
         <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-1.5">
@@ -169,7 +183,6 @@
         </p>
       </div>
 
-      <!-- 5게임 카드 목록 (아이폰 12 미니 1줄 6볼 완벽 안착) -->
       <div id="gamesContainer" class="space-y-3.5"></div>
     </main>
 
@@ -230,8 +243,26 @@
         </div>
       </div>
 
-      <!-- 아이폰 터치 친화적 7열 그리드 (버튼 높이 40px로 넉넉하게 확장) -->
       <div id="numberPickerGrid" class="grid grid-cols-7 sm:grid-cols-9 md:grid-cols-15 gap-2 pt-1"></div>
+    </section>
+
+    <!-- [핵심 4] 동행복권 공식 QR 당첨 확인 & 복권방 찾기 바로가기 링크 -->
+    <section class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
+      <h3 class="text-base font-bold text-slate-900 flex items-center gap-1.5">
+        <span>🔗 동행복권 공식 편의 기능</span>
+      </h3>
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <a href="https://m.dhlottery.co.kr/qr.do?method=check" target="_blank" rel="noopener noreferrer" class="p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 flex flex-col items-center justify-center gap-1 text-center font-bold text-slate-800 transition-all active:scale-95">
+          <span class="text-xl">📷</span>
+          <span>QR 당첨 확인</span>
+          <span class="text-[10px] text-slate-400 font-normal">카메라로 즉시 확인</span>
+        </a>
+        <a href="https://m.dhlottery.co.kr/store.do?method=topStore&pageGubun=L645" target="_blank" rel="noopener noreferrer" class="p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 flex flex-col items-center justify-center gap-1 text-center font-bold text-slate-800 transition-all active:scale-95">
+          <span class="text-xl">🏪</span>
+          <span>1등 당첨 복권방</span>
+          <span class="text-[10px] text-slate-400 font-normal">전국 명당 판매점 찾기</span>
+        </a>
+      </div>
     </section>
 
     <!-- 수동 추가 이력 -->
@@ -245,7 +276,7 @@
 
   </div>
 
-  <!-- 모바일 하단 고정 생성 버튼 바 (글자 크기 및 높이 강화) -->
+  <!-- 모바일 하단 고정 생성 버튼 바 (햅틱 진동 피드백 탑재) -->
   <div class="fixed bottom-0 left-0 right-0 p-3.5 bg-white/95 backdrop-blur-md border-t border-slate-200 md:hidden z-40 shadow-xl">
     <div class="max-w-xl mx-auto">
       <button onclick="generateAllGames()" class="w-full py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-black text-base shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all">
@@ -317,11 +348,54 @@
     const numberStates = {};
     for (let i = 1; i <= 45; i++) numberStates[i] = 0;
 
+    // 모바일 햅틱 진동 헬퍼
+    function triggerHaptic(pattern = [15, 30, 20]) {
+      try {
+        if ('vibrate' in navigator) {
+          navigator.vibrate(pattern);
+        }
+      } catch (e) {}
+    }
+
+    // 다음 추첨 회차 계산
     function calculateExpectedDrawNo() {
       const firstDrawTime = new Date('2002-12-07T20:45:00+09:00').getTime();
       const nowTime = new Date().getTime();
       const diffWeeks = Math.floor((nowTime - firstDrawTime) / (7 * 24 * 60 * 60 * 1000));
       return 1 + diffWeeks;
+    }
+
+    // 다음 추첨일 D-Day 카운트다운 타이머
+    function updateDDayTimer() {
+      const now = new Date();
+      const day = now.getDay(); // 0(일) ~ 6(토)
+      let daysUntilSat = (6 - day + 7) % 7;
+
+      const nextSat = new Date(now);
+      nextSat.setDate(now.getDate() + daysUntilSat);
+      nextSat.setHours(20, 45, 0, 0);
+
+      // 이미 이번 주 토요일 20:45를 넘겼다면 다음 주 토요일 계산
+      if (now.getTime() > nextSat.getTime()) {
+        nextSat.setDate(nextSat.getDate() + 7);
+      }
+
+      const diffMs = nextSat.getTime() - now.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+      const diffMins = Math.floor((diffMs / (1000 * 60)) % 60);
+
+      const nextDrawNo = currentTotalDraws + 1;
+      let badgeText = '';
+
+      if (diffDays === 0) {
+        badgeText = `제${nextDrawNo}회 추첨 오늘! (${diffHours}시간 ${diffMins}분 남음)`;
+      } else {
+        badgeText = `제${nextDrawNo}회 추첨 D-${diffDays} (${diffHours}시간 남음)`;
+      }
+
+      const badgeEl = document.getElementById('ddayBadgeText');
+      if (badgeEl) badgeEl.textContent = badgeText;
     }
 
     async function autoSyncLatestDraws(isManualClick = false) {
@@ -385,6 +459,7 @@
           const bannerText = document.getElementById('syncBannerText');
           bannerText.textContent = `🎉 최신 ${syncedCount}개 회차가 자동으로 동기화되었습니다! (현재 제${currentTotalDraws}회)`;
           banner.classList.remove('hidden');
+          triggerHaptic([30, 60, 30]);
         } else if (isManualClick) {
           alert(`현재 이미 최신 회차(제${currentTotalDraws}회)까지 모두 동기화되어 있습니다.`);
         }
@@ -425,6 +500,7 @@
       document.getElementById('rankSlider').value = currentTopRankLimit;
       renderActivePool();
       generateAllGames();
+      triggerHaptic(10);
     }
 
     function setRankPreset(val) {
@@ -606,6 +682,9 @@
     let currentSlip = [];
 
     function generateAllGames() {
+      // 햅틱 진동 피드백 발동
+      triggerHaptic([15, 30, 20]);
+
       const fixed = [];
       const excluded = [];
       for (let i=1; i<=45; i++) {
@@ -646,7 +725,6 @@
         const card = document.createElement('div');
         card.className = 'p-3.5 sm:p-4 rounded-xl border border-slate-200 bg-white flex flex-col gap-2.5 hover:border-amber-400 transition-all shadow-xs';
 
-        // 아이폰 12 미니 폭(375px)에서 6개 공이 1행에 딱 떨어지는 크기 (w-9 h-9)
         const ballsHtml = game.numbers.map((n, i) => `
           <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center font-black text-xs sm:text-sm ${getBallClass(n)} ball-pop flex-shrink-0" style="animation-delay: ${i * 40}ms;">
             ${n < 10 ? '0' + n : n}
@@ -654,7 +732,6 @@
         `).join('');
 
         card.innerHTML = `
-          <!-- 1줄: 게임 레이블 & 세부 통계 -->
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-1.5">
               <span class="w-5 h-5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 flex items-center justify-center font-black text-xs">${game.id}</span>
@@ -669,7 +746,6 @@
             </div>
           </div>
 
-          <!-- 2줄: 6개 로또 볼 (모바일 1줄 가로 균등 정렬) -->
           <div class="flex items-center justify-between gap-1 pt-0.5">
             ${ballsHtml}
           </div>
@@ -709,6 +785,7 @@
       document.getElementById(`pick-btn-${n}`).className = getPickerBtnClass(n);
       updateSummary();
       generateAllGames();
+      triggerHaptic(10);
     }
 
     function updateSummary() {
@@ -726,6 +803,7 @@
       for (let i = 1; i <= 45; i++) numberStates[i] = 0;
       renderNumberPicker();
       generateAllGames();
+      triggerHaptic(15);
     }
 
     function toggleUpdateModal(show) {
@@ -792,6 +870,7 @@
         `).join('');
       }
 
+      updateDDayTimer();
       renderActivePool();
       renderAllNumbersStats();
       generateAllGames();
@@ -815,6 +894,8 @@
     window.addEventListener('DOMContentLoaded', () => {
       renderNumberPicker();
       loadCustomDrawsAndRecalculate();
+      updateDDayTimer();
+      setInterval(updateDDayTimer, 60000); // 1분마다 디데이 실시간 갱신
       setTimeout(() => autoSyncLatestDraws(false), 800);
     });
   </script>
