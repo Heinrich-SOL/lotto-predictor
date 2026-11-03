@@ -17,6 +17,7 @@
 
   <title>로또 6/45 AI 생성기 & 실시간 자동 동기화</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <style>
     * {
       -webkit-tap-highlight-color: transparent;
@@ -246,21 +247,55 @@
       <div id="numberPickerGrid" class="grid grid-cols-7 sm:grid-cols-9 md:grid-cols-15 gap-2 pt-1"></div>
     </section>
 
-    <!-- [핵심 4] 동행복권 공식 QR 당첨 확인 & 복권방 찾기 바로가기 링크 -->
+    <!-- [핵심 4] 로또 편의 기능 & 네이버 지도 연동 -->
     <section class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
-      <h3 class="text-base font-bold text-slate-900 flex items-center gap-1.5">
-        <span>🔗 동행복권 공식 편의 기능</span>
-      </h3>
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-1.5">
+          <span>🔗 로또 편의 기능 & 지도 연동</span>
+        </h3>
+        <span class="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">실시간 GPS</span>
+      </div>
+
+      <!-- 네이버 지도 내 주변 로또 판매점 찾기 (네이버 공식 시그니처 배너) -->
+      <a href="https://m.map.naver.com/search2/search.naver?query=%EB%A1%9C%EB%98%90%ED%8C%90%EB%A7%A4%EC%A0%90" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between p-3.5 rounded-xl bg-emerald-50/80 hover:bg-emerald-100/70 border border-emerald-200 text-slate-900 transition-all active:scale-98 shadow-2xs group">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-[#03C75A] text-white flex items-center justify-center font-black text-sm shadow-xs flex-shrink-0">
+            N
+          </div>
+          <div>
+            <div class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+              <span>네이버 지도 로또 판매점 찾기</span>
+              <span class="text-[10px] bg-[#03C75A] text-white px-1.5 py-0.2 rounded font-semibold">추천</span>
+            </div>
+            <div class="text-[11px] text-slate-500">내 현재 위치 주변 로또방 실시간 위치 & 영업시간</div>
+          </div>
+        </div>
+        <span class="text-[#03C75A] font-bold text-base group-hover:translate-x-0.5 transition-transform">›</span>
+      </a>
+
+      <!-- 2분할 버튼: QR 당첨 확인 & 1등 당첨 복권방 -->
       <div class="grid grid-cols-2 gap-2 text-xs">
-        <a href="https://m.dhlottery.co.kr/qr.do?method=check" target="_blank" rel="noopener noreferrer" class="p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 flex flex-col items-center justify-center gap-1 text-center font-bold text-slate-800 transition-all active:scale-95">
-          <span class="text-xl">📷</span>
-          <span>QR 당첨 확인</span>
-          <span class="text-[10px] text-slate-400 font-normal">카메라로 즉시 확인</span>
+        <button type="button" onclick="openQrModal()" class="p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 flex flex-col items-center justify-center gap-1 text-center font-bold text-slate-800 transition-all active:scale-95 shadow-2xs">
+          <span class="text-2xl">📷</span>
+          <span class="text-sm font-black">QR 당첨 확인</span>
+          <span class="text-[11px] text-amber-700 font-bold">카메라 촬영 / 결과 조회</span>
+        </button>
+        <a href="https://www.dhlottery.co.kr/wnprchsplcsrch/home" target="_blank" rel="noopener noreferrer" class="p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 flex flex-col items-center justify-center gap-1 text-center font-bold text-slate-800 transition-all active:scale-95 shadow-2xs">
+          <span class="text-2xl">🏪</span>
+          <span class="text-sm font-black">1등 당첨 복권방</span>
+          <span class="text-[11px] text-slate-500 font-normal">동행복권 공식 명당 조회</span>
         </a>
-        <a href="https://m.dhlottery.co.kr/store.do?method=topStore&pageGubun=L645" target="_blank" rel="noopener noreferrer" class="p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 flex flex-col items-center justify-center gap-1 text-center font-bold text-slate-800 transition-all active:scale-95">
-          <span class="text-xl">🏪</span>
-          <span>1등 당첨 복권방</span>
-          <span class="text-[10px] text-slate-400 font-normal">전국 명당 판매점 찾기</span>
+      </div>
+
+      <!-- 보조 빠른 링크: 네이버 1등 명당 & 카카오맵 -->
+      <div class="grid grid-cols-2 gap-2 text-xs pt-0.5">
+        <a href="https://m.map.naver.com/search2/search.naver?query=%EB%A1%9C%EB%98%901%EB%93%B1%EB%AA%85%EB%8B%B9" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-1.5 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold transition-all">
+          <span class="text-[#03C75A] font-black text-xs">N</span>
+          <span>네이버 1등 명당 보기</span>
+        </a>
+        <a href="https://m.map.kakao.com/actions/searchView?q=%EB%A1%9C%EB%98%90%ED%8C%90%EB%A7%A4%EC%A0%90" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-1.5 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold transition-all">
+          <span class="w-3.5 h-3.5 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center font-black text-[9px]">K</span>
+          <span>카카오맵으로 찾기</span>
         </a>
       </div>
     </section>
@@ -320,6 +355,49 @@
           <button type="submit" class="py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-sm">저장 및 반영</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- QR 당첨 확인 전용 모달 팝업 -->
+  <div id="qrModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-1.5">
+          <span>📷 로또 QR 당첨 확인</span>
+        </h3>
+        <button onclick="closeQrModal()" class="text-slate-400 hover:text-slate-700 text-2xl leading-none p-1">&times;</button>
+      </div>
+
+      <!-- 안내 1: 스마트폰 기본 카메라 (공식 권장) -->
+      <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-1.5 text-xs">
+        <div class="font-bold text-amber-900 flex items-center gap-1 text-sm">
+          <span>💡 가장 빠른 공식 확인 방법</span>
+        </div>
+        <p class="text-amber-800 leading-relaxed">
+          동행복권은 보안상 별도의 QR 스캔 웹페이지가 없습니다. 대신 복권 용지 <b>우측 상단 QR코드</b>를 스마트폰 <b>기본 '카메라' 앱</b>으로 비추기만 하면 상단에 노란색 당첨 결과 링크가 즉시 뜹니다!
+        </p>
+      </div>
+
+      <!-- 안내 2: 브라우저 직접 촬영/판독 -->
+      <div class="space-y-2 pt-1">
+        <div class="text-xs font-bold text-slate-700">또는 이 화면에서 바로 카메라로 찍기:</div>
+        
+        <input type="file" id="qrCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleQrImageUpload(event)">
+        
+        <button type="button" onclick="triggerQrCamera()" class="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all">
+          <span>📸 복권 QR 사진 찍어 확인</span>
+        </button>
+
+        <div id="qrScanStatus" class="hidden p-3 rounded-xl text-center text-xs font-medium"></div>
+      </div>
+
+      <!-- 안내 3: 동행복권 공식 모바일 메인 바로가기 -->
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+        <span class="text-slate-500">동행복권 공식 홈페이지</span>
+        <a href="https://m.dhlottery.co.kr" target="_blank" rel="noopener noreferrer" class="font-bold text-amber-700 hover:underline flex items-center gap-1">
+          공식 모바일 홈 바로가기 ↗
+        </a>
+      </div>
     </div>
   </div>
 
@@ -804,6 +882,80 @@
       renderNumberPicker();
       generateAllGames();
       triggerHaptic(15);
+    }
+
+    function openQrModal() {
+      const modal = document.getElementById('qrModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      const statusEl = document.getElementById('qrScanStatus');
+      statusEl.classList.add('hidden');
+      statusEl.innerHTML = '';
+      triggerHaptic(15);
+    }
+
+    function closeQrModal() {
+      const modal = document.getElementById('qrModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function triggerQrCamera() {
+      document.getElementById('qrCameraInput').click();
+    }
+
+    function handleQrImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const statusEl = document.getElementById('qrScanStatus');
+      statusEl.classList.remove('hidden');
+      statusEl.className = 'p-3 rounded-xl bg-slate-100 text-center text-xs text-slate-700 font-medium';
+      statusEl.innerHTML = '<span class="inline-block animate-spin mr-1.5">⏳</span> QR 코드를 판독하고 있습니다...';
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+
+          let decodedText = null;
+          if (typeof jsQR !== 'undefined') {
+            try {
+              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "dontInvert"
+              });
+              if (code && code.data) {
+                decodedText = code.data;
+              }
+            } catch (err) {}
+          }
+
+          if (decodedText) {
+            statusEl.className = 'p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-center text-xs text-emerald-800 font-bold';
+            statusEl.innerHTML = '🎉 QR 인식 성공! 당첨 결과 페이지로 이동합니다...';
+            triggerHaptic([30, 50, 30]);
+            setTimeout(() => {
+              window.open(decodedText, '_blank');
+              closeQrModal();
+            }, 700);
+          } else {
+            statusEl.className = 'p-3 rounded-xl bg-rose-50 border border-rose-200 text-center text-xs text-rose-800 space-y-1';
+            statusEl.innerHTML = `
+              <div class="font-bold">⚠️ QR 코드를 명확히 인식하지 못했습니다.</div>
+              <div class="text-[11px] text-rose-700">스마트폰 기본 <b>'카메라' 앱</b>을 켜서 복권 우측 상단 QR을 비추시면 즉시 당첨 조회가 가능합니다.</div>
+            `;
+            triggerHaptic([50, 50]);
+          }
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
     }
 
     function toggleUpdateModal(show) {
