@@ -11,9 +11,12 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#ffffff">
 
-  <!-- 아이폰 홈 화면 전용 고화질 아이콘 (골드 럭키 클로버 3D 볼) -->
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><radialGradient id='g' cx='30%' cy='30%' r='70%'><stop offset='0%' stop-color='%23fef08a'/><stop offset='100%' stop-color='%23d97706'/></radialGradient></defs><circle cx='50' cy='50' r='48' fill='url(%23g)' stroke='%23b45309' stroke-width='3'/><text x='50' y='64' font-size='42' text-anchor='middle' font-family='sans-serif'>🍀</text></svg>">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%23f59e0b'/><text x='50' y='64' font-size='40' text-anchor='middle'>🎱</text></svg>">
+  <!-- 아이폰 홈 화면 전용 180x180 PNG 공식 규격 앱 아이콘 (사파리 스크린샷 방지 및 네이티브 앱 느낌 구현) -->
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+  <link rel="apple-touch-icon-precomposed" sizes="180x180" href="./apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+  <link rel="manifest" href="./manifest.json">
 
   <title>로또 6/45 AI 생성기 & 실시간 자동 동기화</title>
   <script src="https://cdn.tailwindcss.com"></script>
