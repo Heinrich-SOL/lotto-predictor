@@ -7,10 +7,14 @@
 - 연속 번호 패턴
 - 끝수(동일 1의 자리) 패턴
 - 번호대(구간) 분산도
+- [신규] 역대 1등 당첨번호(1~1248회 전수) 중복 검증 및 최대 일치 개수 분석
 """
 
-from typing import List, Tuple, Dict
-from lotto_data import LOTTO_FREQUENCY_1247
+from typing import List, Tuple, Dict, Optional
+import lotto_data
+
+# 하위 호환성 유지
+LOTTO_FREQUENCY_1247 = getattr(lotto_data, "LOTTO_FREQUENCY_1248", lotto_data.FALLBACK_LOTTO_FREQUENCY)
 
 def calculate_ac_value(numbers: List[int]) -> int:
     """
@@ -87,7 +91,7 @@ def get_max_same_last_digit(numbers: List[int]) -> int:
     return max(counts.values()) if counts else 0
 
 def analyze_combination(numbers: List[int]) -> dict:
-    """조합의 종합 분석 결과 딕셔너리 반환"""
+    """조합의 종합 분석 결과 딕셔너리 반환 (역대 당첨 중복 검사 포함)"""
     sorted_nums = sorted(numbers)
     num_sum = sum(sorted_nums)
     odd, even = get_odd_even_ratio(sorted_nums)
@@ -99,7 +103,23 @@ def analyze_combination(numbers: List[int]) -> dict:
     max_last_digit = get_max_same_last_digit(sorted_nums)
 
     # 역대 빈도 점수 (평균 출현 횟수 대비 점수)
-    avg_freq = sum(LOTTO_FREQUENCY_1247[n] for n in sorted_nums) / 6.0
+    freq_data = getattr(lotto_data, "LOTTO_FREQUENCY_1248", lotto_data.FALLBACK_LOTTO_FREQUENCY)
+    avg_freq = sum(freq_data.get(n, 0) for n in sorted_nums) / 6.0
+
+    # 역대 당첨번호 중복 검증
+    overlap_info = lotto_data.check_history_overlap(sorted_nums)
+    is_exact_dup = overlap_info["is_exact_duplicate"]
+    exact_draw = overlap_info["exact_draw_no"]
+    max_match = overlap_info["max_match_count"]
+    
+    if is_exact_dup:
+        overlap_summary = f"[위험] 제{exact_draw}회 1등 당첨번호와 6개 100% 일치"
+    elif max_match == 5:
+        match_draws = ", ".join(f"{m['draw_no']}회" for m in overlap_info["max_matches"][:2])
+        overlap_summary = f"[주의] 역대 5개 일치 회차 존재 ({match_draws})"
+    else:
+        sample_draw = overlap_info["max_matches"][0]["draw_no"] if overlap_info["max_matches"] else "-"
+        overlap_summary = f"[안전] 역대 1등 미출현 (역대 최대 {max_match}개 일치: {sample_draw}회)"
 
     return {
         "numbers": sorted_nums,
@@ -112,12 +132,20 @@ def analyze_combination(numbers: List[int]) -> dict:
         "active_sections": active_sections,
         "sections": sections,
         "max_same_last_digit": max_last_digit,
-        "avg_historical_frequency": round(avg_freq, 1)
+        "avg_historical_frequency": round(avg_freq, 1),
+        # 역대 중복 검증 결과
+        "is_historical_duplicate": is_exact_dup,
+        "exact_draw_no": exact_draw,
+        "max_historical_match": max_match,
+        "overlap_info": overlap_info,
+        "overlap_summary": overlap_summary
     }
 
-def is_statistically_sound(numbers: List[int]) -> Tuple[bool, List[str]]:
+def is_statistically_sound(numbers: List[int],
+                           allow_historical_dup: bool = False,
+                           max_allowed_match: int = 5) -> Tuple[bool, List[str]]:
     """
-    역대 1등 당첨 통계 필터 검증
+    역대 1등 당첨 통계 필터 및 역대 중복 검증
     1) 총합: 100 ~ 175 구간
     2) 홀짝 비율: 3:3, 4:2, 2:4
     3) 고저 비율: 3:3, 4:2, 2:4
@@ -125,6 +153,8 @@ def is_statistically_sound(numbers: List[int]) -> Tuple[bool, List[str]]:
     5) 연속번호: 3연속 이상 금지 (최대 2연속 1쌍 이하 권장)
     6) 동일 끝수: 3개 초과 금지 (예: 3, 13, 23, 33 금지)
     7) 구간 분산: 최소 3개 이상 구간 분산
+    8) [핵심] 역대 1등 당첨번호와 6개 번호 100% 일치 조합 자동 배제
+    9) [옵션] 역대 당첨번호와 과다 일치(max_allowed_match 초과) 배제
     """
     issues = []
     res = analyze_combination(numbers)
@@ -158,5 +188,13 @@ def is_statistically_sound(numbers: List[int]) -> Tuple[bool, List[str]]:
     # 7) 구간 분산 검증
     if res["active_sections"] < 3:
         issues.append(f"특정 번호대 쏠림 (활성 구간 {res['active_sections']}개)")
+
+    # 8) 역대 1등 당첨번호 6개 100% 일치 배제
+    if not allow_historical_dup and res["is_historical_duplicate"]:
+        issues.append(f"역대 제{res['exact_draw_no']}회 1등 당첨번호와 6개 100% 중복")
+
+    # 9) 역대 당첨번호와의 일치 개수 상한 (예: 5개 초과 즉 6개 일치 방지)
+    if res["max_historical_match"] > max_allowed_match:
+        issues.append(f"역대 당첨번호와 {res['max_historical_match']}개 과다 일치 (최대 {max_allowed_match}개 허용)")
 
     return len(issues) == 0, issues

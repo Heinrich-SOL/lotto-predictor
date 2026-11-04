@@ -19,6 +19,7 @@
   <link rel="manifest" href="./manifest.json">
 
   <title>로또 6/45 AI 생성기 & 실시간 자동 동기화</title>
+  <script src="./historical_draws.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <style>
@@ -96,7 +97,7 @@
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 w-fit">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span id="headerBadge">제1회 ~ 제1247회 공식 누적 데이터 탑재</span>
+          <span id="headerBadge">제1회 ~ 제1248회 역대 1등 중복 배제 필터 탑재</span>
         </div>
 
         <!-- 다음 추첨 D-Day 실시간 뱃지 -->
@@ -173,6 +174,41 @@
           <span class="text-slate-400 font-medium">출현율 상위순</span>
         </div>
         <div id="activePoolBalls" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1"></div>
+      </div>
+    </section>
+
+    <!-- [신규 핵심] 역대 당첨번호 중복 배제 필터 -->
+    <section class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🛡️</span>
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-1.5">
+              <span>역대 당첨번호 중복 배제 필터</span>
+              <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">100% 안심 차단</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">
+              제1회~최신회차 역대 1등 당첨번호와 완전히 동일한 번호 조합을 자동 제외합니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+        <label class="flex items-center justify-between cursor-pointer">
+          <span class="font-bold text-slate-800 flex items-center gap-1.5">
+            <span>🚫 역대 1등 당첨번호(6개 일치) 중복 배제</span>
+            <span class="text-[10px] text-emerald-700 font-extrabold bg-emerald-100/70 px-1.5 py-0.5 rounded">기본 권장</span>
+          </span>
+          <input type="checkbox" id="chkExclude1st" checked onchange="generateAllGames()" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
+        </label>
+        <label class="flex items-center justify-between cursor-pointer pt-1 border-t border-slate-200/60">
+          <span class="text-slate-600 flex items-center gap-1.5">
+            <span>⚠️ 역대 5개 이상 일치 번호도 배제 (초강력 분산 필터)</span>
+            <span class="text-[10px] text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">선택</span>
+          </span>
+          <input type="checkbox" id="chkExclude5th" onchange="generateAllGames()" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
+        </label>
       </div>
     </section>
 
@@ -405,22 +441,61 @@
   </div>
 
   <script>
-    const BASE_TOTAL_DRAWS = 1247;
+    const BASE_TOTAL_DRAWS = (typeof HISTORICAL_DRAWS_DATA !== 'undefined' && HISTORICAL_DRAWS_DATA.length) ? HISTORICAL_DRAWS_DATA.length : 1248;
     const BASE_FREQ_DATA = {
       1: 204, 2: 193, 3: 204, 4: 199, 5: 179,
-      6: 201, 7: 204, 8: 184, 9: 165, 10: 191,
+      6: 201, 7: 203, 8: 184, 9: 165, 10: 192,
       11: 194, 12: 208, 13: 212, 14: 196, 15: 196,
-      16: 201, 17: 204, 18: 199, 19: 193, 20: 202,
-      21: 193, 22: 169, 23: 171, 24: 203, 25: 178,
-      26: 198, 27: 215, 28: 185, 29: 174, 30: 190,
+      16: 202, 17: 204, 18: 200, 19: 193, 20: 202,
+      21: 193, 22: 170, 23: 171, 24: 203, 25: 178,
+      26: 198, 27: 216, 28: 185, 29: 174, 30: 190,
       31: 203, 32: 181, 33: 207, 34: 211, 35: 194,
-      36: 190, 37: 200, 38: 204, 39: 193, 40: 196,
-      41: 170, 42: 191, 43: 202, 44: 190, 45: 198
+      36: 191, 37: 200, 38: 205, 39: 193, 40: 196,
+      41: 170, 42: 192, 43: 202, 44: 190, 45: 198
     };
 
     let currentTotalDraws = BASE_TOTAL_DRAWS;
     let currentFreqData = { ...BASE_FREQ_DATA };
     let customDraws = [];
+
+    // 역대 1등 당첨번호 중복 검증 집합 및 함수
+    let historicalCombosSet = new Set();
+    function initHistoricalCombos() {
+      if (typeof HISTORICAL_DRAWS_DATA !== 'undefined' && Array.isArray(HISTORICAL_DRAWS_DATA)) {
+        historicalCombosSet = new Set(
+          HISTORICAL_DRAWS_DATA.map(d => [...d[1]].sort((a,b)=>a-b).join(','))
+        );
+      }
+    }
+    initHistoricalCombos();
+
+    function checkHistoricalOverlap(nums) {
+      const sorted = [...nums].sort((a,b)=>a-b);
+      const key = sorted.join(',');
+      const isExactMatch = historicalCombosSet.has(key);
+      let exactDraw = null;
+      let maxMatch = 0;
+      let maxMatchDraw = null;
+
+      if (typeof HISTORICAL_DRAWS_DATA !== 'undefined' && Array.isArray(HISTORICAL_DRAWS_DATA)) {
+        for (let i = 0; i < HISTORICAL_DRAWS_DATA.length; i++) {
+          const d = HISTORICAL_DRAWS_DATA[i];
+          const dNums = d[1];
+          let match = 0;
+          for (let j = 0; j < 6; j++) {
+            if (dNums.includes(sorted[j])) match++;
+          }
+          if (match === 6 && !exactDraw) {
+            exactDraw = d[0];
+          }
+          if (match > maxMatch) {
+            maxMatch = match;
+            maxMatchDraw = d[0];
+          }
+        }
+      }
+      return { isExactMatch, exactDraw, maxMatch, maxMatchDraw };
+    }
 
     let currentTopRankLimit = 20;
     let statsSortMode = 'rank';
@@ -696,6 +771,17 @@
       if (ac < 6) return false;
       const { maxStreak } = calcConsecutive(sorted);
       if (maxStreak >= 3) return false;
+
+      // 역대 1등 당첨번호 중복 검증 필터
+      const chk1st = document.getElementById('chkExclude1st');
+      const chk5th = document.getElementById('chkExclude5th');
+      const exclude1st = chk1st ? chk1st.checked : true;
+      const exclude5th = chk5th ? chk5th.checked : false;
+
+      const overlap = checkHistoricalOverlap(sorted);
+      if (exclude1st && overlap.isExactMatch) return false;
+      if (exclude5th && overlap.maxMatch >= 5) return false;
+
       return true;
     }
 
@@ -775,14 +861,25 @@
 
       const ranked = getRankedNumbers();
       const allowedPool = ranked.slice(0, currentTopRankLimit).map(x => x.num);
+      const usedCombos = new Set();
 
       currentSlip = STRATEGIES.map(st => {
-        const numbers = generateGameWithPool(st.type, fixed, excluded, allowedPool);
+        let numbers = [];
+        for (let tries = 0; tries < 200; tries++) {
+          numbers = generateGameWithPool(st.type, fixed, excluded, allowedPool);
+          const key = numbers.join(',');
+          if (!usedCombos.has(key)) {
+            usedCombos.add(key);
+            break;
+          }
+        }
+
         const sum = numbers.reduce((a,b)=>a+b, 0);
         const odd = numbers.filter(n=>n%2===1).length;
         const ac = calcAC(numbers);
         const { pairs } = calcConsecutive(numbers);
         const avgRate = (numbers.reduce((a,b)=>a + ((currentFreqData[b]/currentTotalDraws)*100), 0) / 6).toFixed(1);
+        const overlap = checkHistoricalOverlap(numbers);
 
         return {
           ...st,
@@ -791,7 +888,8 @@
           oddEven: `${odd}:${6-odd}`,
           ac,
           pairs,
-          avgRate
+          avgRate,
+          overlap
         };
       });
 
@@ -812,6 +910,17 @@
           </div>
         `).join('');
 
+        const overlapBadge = `
+          <div class="flex items-center justify-between text-[11px] sm:text-xs bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5 mt-0.5">
+            <span class="${game.overlap.isExactMatch ? 'text-rose-600 font-bold' : (game.overlap.maxMatch >= 5 ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-bold')} flex items-center gap-1">
+              ${game.overlap.isExactMatch ? '⚠️ 제' + game.overlap.exactDraw + '회 1등 중복' : (game.overlap.maxMatch >= 5 ? '🟡 역대 5개 일치 회차 존재' : '🛡️ 역대 1등 미출현 (안심)')}
+            </span>
+            <span class="text-slate-500 font-mono">
+              역대 최대 일치: <b class="text-slate-800">${game.overlap.maxMatch}개</b> (제${game.overlap.maxMatchDraw || '-'}회)
+            </span>
+          </div>
+        `;
+
         card.innerHTML = `
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-1.5">
@@ -830,6 +939,8 @@
           <div class="flex items-center justify-between gap-1 pt-0.5">
             ${ballsHtml}
           </div>
+
+          ${overlapBadge}
         `;
         container.appendChild(card);
       });
@@ -1005,12 +1116,15 @@
       currentTotalDraws = BASE_TOTAL_DRAWS + customDraws.length;
       currentFreqData = { ...BASE_FREQ_DATA };
 
+      initHistoricalCombos();
+
       customDraws.forEach(item => {
         item.numbers.forEach(num => { if (currentFreqData[num]) currentFreqData[num] += 1; });
         if (item.bonus && currentFreqData[item.bonus]) currentFreqData[item.bonus] += 1;
+        historicalCombosSet.add([...item.numbers].sort((a,b)=>a-b).join(','));
       });
 
-      document.getElementById('headerBadge').textContent = `제1회 ~ 제${currentTotalDraws}회 공식 누적 데이터 탑재`;
+      document.getElementById('headerBadge').textContent = `제1회 ~ 제${currentTotalDraws}회 역대 1등 중복 배제 필터 가동`;
       document.getElementById('manualHistoryCount').textContent = customDraws.length;
 
       const listContainer = document.getElementById('manualHistoryList');
